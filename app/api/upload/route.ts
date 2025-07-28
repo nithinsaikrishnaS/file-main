@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     const buffer = new Uint8Array(arrayBuffer)
 
     // Upload file to Supabase Storage
-    const fileName = ${fileId}/${file.name}
+    const fileName = `${fileId}/${file.name}`
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from("files")
       .upload(fileName, buffer, {
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     // Return success with shareable link
     return NextResponse.json({
       fileId,
-      shareableLink: ${process.env.NEXT_PUBLIC_APP_URL}/download/${fileId},
+      shareableLink: `${process.env.NEXT_PUBLIC_APP_URL}/download/${fileId}`
     })
   } catch (error) {
     console.error("Upload error:", error)
