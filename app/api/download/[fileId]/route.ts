@@ -1,13 +1,18 @@
-import { type NextRequest, NextResponse } from "next/server"
 import { supabase } from "@/lib/supabase"
 import bcrypt from "bcryptjs"
+import { NextResponse } from "next/server"
 
-export async function POST(request: NextRequest, { params }: { params: { fileId: string } }) {
+export async function POST(req, { params }) {
   try {
-    const { password } = await request.json()
     const { fileId } = params
+    const body = await req.json()
+    const { password } = body
 
-    // Get file metadata
+    if (!fileId || !password) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    }
+
+    // Fetch file metadata
     const { data: fileData, error: fetchError } = await supabase
       .from("file_shares")
       .select("*")
@@ -18,70 +23,32 @@ export async function POST(request: NextRequest, { params }: { params: { fileId:
       return NextResponse.json({ error: "File not found" }, { status: 404 })
     }
 
-    // Check if file has expired
-    if (new Date(fileData.expiry_date) <= new Date()) {
-      return NextResponse.json({ error: "File has expired" }, { status: 410 })
+    // Validate password
+    const passwordMatch = await bcrypt.compare(password, fileData.password_hash)
+    if (!passwordMatch) {
+      return NextResponse.json({ error: "Incorrect password" }, { status: 401 })
     }
 
-    // Verify password
-    const isValidPassword = await bcrypt.compare(password, fileData.password_hash)
-
-    if (!isValidPassword) {
-      return NextResponse.json({ error: "Invalid password" }, { status: 401 })
+    // Check expiry date
+    const now = new Date()
+    const expiry = new Date(fileData.expiry_date)
+    if (now > expiry) {
+      return NextResponse.json({ error: "Link has expired" }, { status: 410 })
     }
 
-    // Get signed URL for download
-    const { data: signedUrlData, error: urlError } = await supabase.storage
+    // Generate signed URL
+    const { data: signedUrlData, error: signedUrlError } = await supabase
+      .storage
       .from("files")
-      .createSignedUrl(fileData.storage_path, 3600) // 1 hour expiry
+      .createSignedUrl(fileData.storage_path, 60 * 5) // valid for 5 mins
 
-    if (urlError) {
-      throw urlError
+    if (signedUrlError) {
+      return NextResponse.json({ error: "Could not generate download URL" }, { status: 500 })
     }
 
-    // Update download count
-    await supabase
-      .from("file_shares")
-      .update({
-        download_count: fileData.download_count + 1,
-        downloaded_at: new Date().toISOString(),
-      })
-      .eq("file_id", fileId)
-
-    return NextResponse.json({
-      downloadUrl: signedUrlData.signedUrl,
-      fileName: fileData.original_name,
-      fileSize: fileData.file_size,
-    })
+    return NextResponse.json({ downloadUrl: signedUrlData.signedUrl })
   } catch (error) {
     console.error("Download error:", error)
-    return NextResponse.json({ error: "Download failed" }, { status: 500 })
-  }
-}
-
-export async function GET(request: NextRequest, { params }: { params: { fileId: string } }) {
-  try {
-    const { fileId } = params
-
-    // Get file metadata (without password verification)
-    const { data: fileData, error: fetchError } = await supabase
-      .from("file_shares")
-      .select("file_id, original_name, file_size, expiry_date")
-      .eq("file_id", fileId)
-      .single()
-
-    if (fetchError || !fileData) {
-      return NextResponse.json({ error: "File not found" }, { status: 404 })
-    }
-
-    const isExpired = new Date(fileData.expiry_date) <= new Date()
-
-    return NextResponse.json({
-      ...fileData,
-      isExpired,
-    })
-  } catch (error) {
-    console.error("Fetch error:", error)
-    return NextResponse.json({ error: "Failed to fetch file data" }, { status: 500 })
+    return NextResponse.json({ error: "Server error" }, { status: 500 })
   }
 }
