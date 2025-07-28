@@ -12,7 +12,7 @@ export default function DownloadPage() {
   useEffect(() => {
     async function fetchDownloadUrl() {
       try {
-        const response = await axios.get(/api/download/${fileId});
+        const response = await axios.get(`/api/download/${fileId}`);
         setDownloadUrl(response.data.url);
       } catch (err) {
         console.error('Failed to fetch download URL:', err);
