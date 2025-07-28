@@ -25,11 +25,15 @@ export default function Home() {
 
     setIsUploading(true);
 
+    const uniqueId = uuidv4(); // Generate UUID
+    console.log("Generated UUID:", uniqueId);
+
     const formData = new FormData();
     formData.append("file", file);
     formData.append("password", password);
     formData.append("expiry", expiry); // ISO format recommended
     formData.append("senderName", senderName);
+    formData.append("uuid", uniqueId); // attach UUID to request
 
     try {
       const res = await fetch("/api/upload", {
