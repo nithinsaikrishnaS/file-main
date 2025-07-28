@@ -5,12 +5,16 @@ import { useParams } from 'next/navigation';
 import axios from 'axios';
 
 export default function DownloadPage() {
-  const { fileId } = useParams();
+  const params = useParams();
+  const fileId = Array.isArray(params.fileId) ? params.fileId[0] : params.fileId;
+
   const [downloadUrl, setDownloadUrl] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
     async function fetchDownloadUrl() {
+      if (!fileId) return;
+
       try {
         const response = await axios.get(`/api/download/${fileId}`);
         setDownloadUrl(response.data.url);
@@ -25,10 +29,9 @@ export default function DownloadPage() {
 
   const handleDownload = () => {
     if (downloadUrl) {
-      // Force browser to download the file
       const link = document.createElement('a');
       link.href = downloadUrl;
-      link.download = ''; // Let browser use default file name
+      link.download = ''; // use browser default file name
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -38,7 +41,11 @@ export default function DownloadPage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4">
       <h1 className="text-2xl font-bold mb-4">Download File</h1>
-      {error && <p className="text-red-500">{error}</p>}
+
+      {error && (
+        <p className="text-red-500 mb-4">{error}</p>
+      )}
+
       {!error && downloadUrl && (
         <button
           onClick={handleDownload}
@@ -46,6 +53,10 @@ export default function DownloadPage() {
         >
           Download Now
         </button>
+      )}
+
+      {!error && !downloadUrl && (
+        <p className="text-gray-500">Loading...</p>
       )}
     </div>
   );
