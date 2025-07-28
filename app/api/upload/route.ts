@@ -14,16 +14,26 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate unique file ID
-    const fileId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+    const fileId = Math.random().toString(36).substring(2, 15) +
+                   Math.random().toString(36).substring(2, 15)
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10)
 
+    // Convert file to buffer
+    const arrayBuffer = await file.arrayBuffer()
+    const buffer = new Uint8Array(arrayBuffer)
+
     // Upload file to Supabase Storage
-    const fileName = `${fileId}/${file.name}`
-    const { data: uploadData, error: uploadError } = await supabase.storage.from("files").upload(fileName, file)
+    const fileName = ${fileId}/${file.name}
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from("files")
+      .upload(fileName, buffer, {
+        contentType: file.type,
+      })
 
     if (uploadError) {
+      console.error("Storage upload error:", uploadError)
       throw uploadError
     }
 
@@ -33,19 +43,21 @@ export async function POST(request: NextRequest) {
       original_name: file.name,
       file_size: file.size,
       password_hash: hashedPassword,
-      expiry_date: expiryDate,
-      storage_path: uploadData.path,
+      expiry_date: new Date(expiryDate).toISOString(), // ensure valid timestamp format
+      storage_path: uploadData?.path,
     })
 
     if (dbError) {
-      // Clean up uploaded file if database insert fails
+      // Clean up uploaded file if DB insert fails
       await supabase.storage.from("files").remove([fileName])
+      console.error("DB insert error:", dbError)
       throw dbError
     }
 
+    // Return success with shareable link
     return NextResponse.json({
       fileId,
-      shareableLink: `${process.env.NEXT_PUBLIC_APP_URL}/download/${fileId}`,
+      shareableLink: ${process.env.NEXT_PUBLIC_APP_URL}/download/${fileId},
     })
   } catch (error) {
     console.error("Upload error:", error)
