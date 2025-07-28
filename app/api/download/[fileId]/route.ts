@@ -11,9 +11,10 @@ export async function GET(request: Request, { params }: { params: { fileId: stri
   try {
     // Look up file metadata in your database (optional)
     // For now assume the path in storage = `uploads/${fileId}`
-    const { data, error } = await supabase.storage
-      .from('uploads')
-      .createSignedUrl(`files/${fileId}`, 60 * 60); // 1 hour expiry
+    const { data, error } = await supabase
+  .storage
+  .from('uploads')
+  .createSignedUrl(`${fileId}`, 3600); // ✅ correct if uploaded directly in 'uploads'
 
     if (error || !data) {
       console.error('Signed URL Error:', error);
