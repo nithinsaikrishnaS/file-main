@@ -9,19 +9,34 @@ export async function GET(request: Request, { params }: { params: { fileId: stri
   const { fileId } = params;
 
   try {
-    // Look up file metadata in your database (optional)
-    // For now assume the path in storage = `uploads/${fileId}`
-    const { data, error } = await supabase
-  .storage
-  .from('uploads')
-  .createSignedUrl(`${fileId}`, 3600); // ✅ correct if uploaded directly in 'uploads'
+    // ✅ Step 1: Get file record from Supabase table
+    const { data: files, error: fetchError } = await supabase
+      .from('files')
+      .select('file_name')
+      .eq('id', fileId)
+      .single();
 
-    if (error || !data) {
-      console.error('Signed URL Error:', error);
+    if (fetchError || !files) {
+      console.error('File not found:', fetchError);
+      return NextResponse.json({ error: 'File not found' }, { status: 404 });
+    }
+
+    const fileName = files.file_name; // e.g., 'myresume.pdf'
+
+    // ✅ Step 2: Create signed URL for download
+    const { data: signedUrlData, error: urlError } = await supabase
+      .storage
+      .from('uploads')
+      .createSignedUrl(fileName, 3600);
+
+    if (urlError || !signedUrlData) {
+      console.error('Signed URL Error:', urlError);
       return NextResponse.json({ error: 'Failed to create signed URL' }, { status: 500 });
     }
 
-    return NextResponse.json({ url: data.signedUrl });
+    // ✅ Step 3: Return the signed URL
+    return NextResponse.json({ url: signedUrlData.signedUrl });
+
   } catch (err) {
     console.error('Download API Error:', err);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
