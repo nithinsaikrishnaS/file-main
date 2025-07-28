@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DropShare - Secure File Sharing</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="logo">DropShare</h1>
+                <nav class="nav">
+                    <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+                        <span class="theme-icon">🌙</span>
+                    </button>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main">
+            <div class="upload-container" id="uploadContainer">
+                <!-- Hero Section -->
+                <div class="hero">
+                    <h2 class="hero-title">Share Files Securely</h2>
+                    <p class="hero-description">Upload files with password protection and expiry dates. No account required.</p>
+                </div>
+
+                <!-- Upload Card -->
+                <div class="card upload-card">
+                    <div class="card-header">
+                        <h3 class="card-title">Upload Your File</h3>
+                        <p class="card-description">Drag and drop your file or browse to select. Set a password and expiry date for security.</p>
+                    </div>
+
+                    <div class="card-content">
+                        <!-- File Upload Section -->
+                        <div class="upload-section">
+                            <div class="upload-area" id="uploadArea">
+                                <div class="upload-content" id="uploadContent">
+                                    <div class="upload-icon">📁</div>
+                                    <h4 class="upload-title">Drop your file here</h4>
+                                    <p class="upload-subtitle">or</p>
+                                    <button class="btn btn-secondary" id="browseBtn">Browse Files</button>
+                                    <input type="file" id="fileInput" class="file-input" multiple>
+                                </div>
+                                <div class="file-preview" id="filePreview" style="display: none;">
+                                    <div class="file-icon">📄</div>
+                                    <div class="file-info">
+                                        <div class="file-name" id="fileName"></div>
+                                        <div class="file-size" id="fileSize"></div>
+                                        <div class="file-count" id="fileCount"></div>
+                                    </div>
+                                    <button class="btn-remove" id="removeFile">✕</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Security Section -->
+                        <div class="security-section">
+                            <div class="form-group">
+                                <label for="password" class="form-label">
+                                    Set Password <span class="required">*</span>
+                                </label>
+                                <input 
+                                    type="password" 
+                                    id="password" 
+                                    class="form-input" 
+                                    placeholder="Enter a secure password"
+                                    required
+                                >
+                                <div class="form-error" id="passwordError"></div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="expiryDateTime" class="form-label">
+                                        Expiry Date & Time <span class="required">*</span>
+                                    </label>
+                                    <input 
+                                        type="datetime-local" 
+                                        id="expiryDateTime" 
+                                        class="form-input"
+                                        required
+                                    >
+                                    <div class="form-error" id="expiryError"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Upload Button -->
+                        <button class="btn btn-primary btn-full" id="generateLinkBtn" disabled>
+                            <span class="btn-icon">🔗</span>
+                            Generate Secure Link
+                        </button>
+
+                        <div class="form-hint" id="formHint">
+                            Please fill in all required fields to enable upload.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Success Container -->
+            <div class="success-container" id="successContainer" style="display: none;">
+                <div class="card success-card">
+                    <div class="card-header text-center">
+                        <div class="success-icon">✅</div>
+                        <h3 class="card-title">Upload Successful!</h3>
+                        <p class="card-description">Your file has been securely uploaded and is ready to share.</p>
+                    </div>
+
+                    <div class="card-content">
+                        <!-- Shareable Link -->
+                        <div class="link-section">
+                            <label class="form-label">Shareable Link</label>
+                            <div class="link-container">
+                                <input type="text" id="shareableLink" class="form-input link-input" readonly>
+                                <button class="btn btn-secondary btn-copy" id="copyLinkBtn">
+                                    <span class="copy-icon" id="copyIcon">📋</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- File Info -->
+                        <div class="info-grid">
+                            <div class="info-card">
+                                <div class="info-icon">🔒</div>
+                                <div class="info-content">
+                                    <div class="info-title">Password Protected</div>
+                                    <div class="info-text">This file is protected with a password.</div>
+                                </div>
+                            </div>
+                            <div class="info-card">
+                                <div class="info-icon">⏰</div>
+                                <div class="info-content">
+                                    <div class="info-title">Expires</div>
+                                    <div class="info-text" id="expiryInfo"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="action-buttons">
+                            <button class="btn btn-primary" id="copyLinkBtn2">
+                                <span class="btn-icon" id="copyIcon2">📋</span>
+                                Copy Link
+                            </button>
+                            <button class="btn btn-outline" id="uploadAnotherBtn">
+                                Upload Another
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Loading Overlay -->
+        <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+            <div class="loading-content">
+                <div class="spinner"></div>
+                <p class="loading-text">Uploading your file...</p>
+            </div>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div class="toast-container" id="toastContainer"></div>
+    </div>
+
+    <script src="supabase-config.js"></script>
+    <script src="upload.js"></script>
+</body>
+</html>

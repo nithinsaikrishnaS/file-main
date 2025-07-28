@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DropShare - Download File</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="logo">DropShare</h1>
+                <nav class="nav">
+                    <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+                        <span class="theme-icon">🌙</span>
+                    </button>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main">
+            <div class="download-container">
+                <!-- Loading State -->
+                <div class="card" id="loadingCard">
+                    <div class="card-content text-center">
+                        <div class="spinner"></div>
+                        <p class="loading-text">Loading file information...</p>
+                    </div>
+                </div>
+
+                <!-- File Not Found -->
+                <div class="card error-card" id="notFoundCard" style="display: none;">
+                    <div class="card-content text-center">
+                        <div class="error-icon">❌</div>
+                        <h3 class="error-title">File Not Found</h3>
+                        <p class="error-text">This file doesn't exist or has been removed.</p>
+                        <button class="btn btn-primary" onclick="window.location.href='index.html'">
+                            Go Home
+                        </button>
+                    </div>
+                </div>
+
+                <!-- File Expired -->
+                <div class="card error-card" id="expiredCard" style="display: none;">
+                    <div class="card-content text-center">
+                        <div class="error-icon">⏰</div>
+                        <h3 class="error-title">Link Expired</h3>
+                        <p class="error-text">This file link has expired and is no longer available for download.</p>
+                        <button class="btn btn-primary" onclick="window.location.href='index.html'">
+                            Go Home
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Password Prompt -->
+                <div class="card download-card" id="passwordCard" style="display: none;">
+                    <div class="card-header text-center">
+                        <div class="download-icon" id="downloadIcon">🔒</div>
+                        <h3 class="card-title" id="cardTitle">Password Protected File</h3>
+                        <p class="card-description" id="cardDescription">Enter the password to access this file.</p>
+                    </div>
+
+                    <div class="card-content">
+                        <!-- File Information -->
+                        <div class="file-info-section" id="fileInfoSection">
+                            <div class="file-info-card">
+                                <div class="file-info-row">
+                                    <span class="file-info-label">File Name:</span>
+                                    <span class="file-info-value" id="fileNameDisplay"></span>
+                                </div>
+                                <div class="file-info-row">
+                                    <span class="file-info-label">Size:</span>
+                                    <span class="file-info-value" id="fileSizeDisplay"></span>
+                                </div>
+                                <div class="file-info-row">
+                                    <span class="file-info-label">Expires:</span>
+                                    <span class="file-info-value" id="fileExpiryDisplay"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Password Input (shown when locked) -->
+                        <div class="password-section" id="passwordSection">
+                            <div class="form-group">
+                                <label for="downloadPassword" class="form-label">Enter Password</label>
+                                <input 
+                                    type="password" 
+                                    id="downloadPassword" 
+                                    class="form-input" 
+                                    placeholder="Enter the file password"
+                                >
+                                <div class="form-error" id="passwordError"></div>
+                            </div>
+
+                            <button class="btn btn-primary btn-full" id="unlockBtn">
+                                <span class="btn-icon">🔓</span>
+                                Unlock File
+                            </button>
+                        </div>
+
+                        <!-- Download Section (shown when unlocked) -->
+                        <div class="download-section" id="downloadSection" style="display: none;">
+                            <div class="success-message">
+                                <div class="success-icon">✅</div>
+                                <p>File unlocked successfully! You can now download it.</p>
+                            </div>
+
+                            <button class="btn btn-primary btn-full" id="downloadBtn">
+                                <span class="btn-icon">⬇️</span>
+                                Download File
+                            </button>
+                        </div>
+
+                        <!-- Upload Link -->
+                        <div class="text-center">
+                            <button class="btn btn-ghost" onclick="window.location.href='index.html'">
+                                Upload your own file
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Loading Overlay -->
+        <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+            <div class="loading-content">
+                <div class="spinner"></div>
+                <p class="loading-text" id="loadingText">Verifying password...</p>
+            </div>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div class="toast-container" id="toastContainer"></div>
+    </div>
+
+    <script src="supabase-config.js"></script>
+    <script src="download.js"></script>
+</body>
+</html>
